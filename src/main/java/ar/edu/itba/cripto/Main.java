@@ -1,5 +1,6 @@
 package ar.edu.itba.cripto;
 
+import ar.edu.itba.cripto.bmp.BMPFile;
 import ar.edu.itba.cripto.utils.ParserCLI;
 import org.apache.commons.cli.CommandLine;
 
@@ -57,6 +58,12 @@ public class Main {
             String directory = parsed.hasOption("dir") ? parsed.getOptionValue("dir") : ".";
 
             // Run program
+            BMPFile file = new BMPFile(secretImagePath);
+            System.out.println("Secret image loaded successfully: " + secretImagePath);
+            System.out.println("Image dimensions: " + file.getWidth() + "x" + file.getHeight());
+            System.out.println("Bits per pixel: " + file.getBitsPerPixel());
+            System.out.println("Data length: " + file.getData().length + " bytes");
+
             System.out.println("CLI Configuration successfully loaded!");
 
         } catch (IllegalArgumentException e) {
