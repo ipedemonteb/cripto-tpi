@@ -28,7 +28,7 @@ public class BMPFile {
 
         bitsPerPixel = ((file[29] & 0xFF) << 8) | (file[28] & 0xFF);
         if(bitsPerPixel != BITS_PER_PIXEL){
-            throw new IOException("Solo se soportan BMP de 8 bits por pixel");
+            throw new IOException("Only 8 bits per pixel are supported.");
         }
 
         width = ((file[21] & 0xFF) << 24) | ((file[20] & 0xFF) << 16) |
@@ -63,4 +63,12 @@ public class BMPFile {
     public int getHeight() { return height; }
 
     public int getBitsPerPixel() { return bitsPerPixel; }
+
+    public int getSeed() {
+        return ((header[7] & 0xFF) << 8) | (header[6] & 0xFF);
+    }
+
+    public int getShadowNumber() {
+        return ((header[9] & 0xFF) << 8) | (header[8] & 0xFF);
+    }
 }
