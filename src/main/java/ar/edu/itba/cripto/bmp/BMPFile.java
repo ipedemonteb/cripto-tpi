@@ -36,6 +36,7 @@ public class BMPFile {
         height = ((file[25] & 0xFF) << 24) | ((file[24] & 0xFF) << 16) |
                 ((file[23] & 0xFF) << 8) | (file[22] & 0xFF);
 
+        //@TODO: Check if we should accept compressed files
         int isCompressed = ((file[33] & 0xFF) << 24) | ((file[32] & 0xFF) << 16) |
                 ((file[31] & 0xFF) << 8) | (file[30] & 0xFF);
         if (isCompressed != 0) {
