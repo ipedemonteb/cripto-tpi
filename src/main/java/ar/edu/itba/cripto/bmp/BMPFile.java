@@ -64,6 +64,14 @@ public class BMPFile {
 
     public int getBitsPerPixel() { return bitsPerPixel; }
 
+    public int[] getDataAsIntArray() {
+        int[] result = new int[data.length];
+        for (int i = 0; i < data.length; i++) {
+            result[i] = data[i] & 0xFF;
+        }
+        return result;
+    }
+
     public int getSeed() {
         return ((header[7] & 0xFF) << 8) | (header[6] & 0xFF);
     }

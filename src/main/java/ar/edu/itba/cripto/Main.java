@@ -1,9 +1,9 @@
 package ar.edu.itba.cripto;
 
 import ar.edu.itba.cripto.bmp.BMPFile;
-import ar.edu.itba.cripto.steganography.PermutationTable;
+import ar.edu.itba.cripto.steganography.SteganographyEngine;
+import ar.edu.itba.cripto.utils.Config;
 import ar.edu.itba.cripto.utils.ParserCLI;
-import ar.edu.itba.cripto.utils.ProgramConfig;
 import org.apache.commons.cli.CommandLine;
 
 import java.io.IOException;
@@ -15,10 +15,14 @@ public class Main {
         ParserCLI parserCli = new ParserCLI();
         try {
             CommandLine parsed = parserCli.parse(args);
-            ProgramConfig config = ProgramConfig.from(parsed);
+            Config config = Config.from(parsed);
 
-            BMPFile file = new BMPFile(config.getSecretImagePath());
-            PermutationTable table = new PermutationTable(file.getSeed(), file.getData().length);
+            BMPFile secretImage = new BMPFile(config.getSecretImagePath());
+
+            if (config.isDistribute()) {
+                SteganographyEngine engine = new SteganographyEngine(config, secretImage, null);
+                engine.distribute();
+            }
 
         } catch (IllegalArgumentException e) {
             System.err.println("Configuration Error: " + e.getMessage());

@@ -4,7 +4,7 @@ import org.apache.commons.cli.CommandLine;
 
 import java.io.File;
 
-public class ProgramConfig {
+public class Config {
 
     private static final int MIN_K = 2;
     private static final int MAX_K = 10;
@@ -16,7 +16,7 @@ public class ProgramConfig {
     private final Integer n;
     private final File directory;
 
-    private ProgramConfig(boolean distribute, String secretImagePath, int k, Integer n, File directory) {
+    private Config(boolean distribute, String secretImagePath, int k, Integer n, File directory) {
         this.distribute = distribute;
         this.secretImagePath = secretImagePath;
         this.k = k;
@@ -24,7 +24,7 @@ public class ProgramConfig {
         this.directory = directory;
     }
 
-    public static ProgramConfig from(CommandLine parsed) {
+    public static Config from(CommandLine parsed) {
         boolean isDistribute = parsed.hasOption("d");
         boolean isRecover = parsed.hasOption("r");
 
@@ -81,7 +81,7 @@ public class ProgramConfig {
             throw new IllegalArgumentException("The specified directory does not exist or is not a directory: " + directoryPath);
         }
 
-        return new ProgramConfig(isDistribute, secretImagePath, k, n, directory);
+        return new Config(isDistribute, secretImagePath, k, n, directory);
     }
 
     public boolean isDistribute() { return distribute; }
