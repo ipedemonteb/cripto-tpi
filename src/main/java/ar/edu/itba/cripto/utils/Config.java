@@ -71,9 +71,6 @@ public class Config {
             }
         }
 
-        if (isDistribute && n == null) {
-            throw new IllegalArgumentException("The option -n is mandatory in distribute mode (-d).");
-        }
 
         String directoryPath = parsed.hasOption("dir") ? parsed.getOptionValue("dir") : ".";
         File directory = new File(directoryPath);

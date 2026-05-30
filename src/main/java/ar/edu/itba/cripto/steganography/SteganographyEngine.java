@@ -3,6 +3,10 @@ package ar.edu.itba.cripto.steganography;
 import ar.edu.itba.cripto.bmp.BMPFile;
 import ar.edu.itba.cripto.utils.Config;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
@@ -20,12 +24,30 @@ public class SteganographyEngine {
         this.shadowImages = shadowImages;
     }
 
-    public void distribute() {
+    public void distribute() throws IOException {
         int k = config.getK();
-        int n = config.getN();
+        int n = shadowImages.size();
+        int seed = secretImage.getSeed();
 
         int[] permutedData = permutationTable.apply(secretImage.getDataAsIntArray());
+        int[][] shadowPixels = buildShadowPixels(permutedData, n, k);
 
+        Path outputDir = Paths.get("output");
+        Files.createDirectories(outputDir);
+
+        for (int i = 0; i < n; i++) {
+            BMPFile carrier = shadowImages.get(i);
+            LSB.hide(carrier, shadowPixels[i], i + 1, seed);
+            Path outputPath = outputDir.resolve(carrier.getPath().getFileName());
+            carrier.save(outputPath);
+        }
+    }
+
+    public void recover() {
+
+    }
+
+    private int[][] buildShadowPixels(int[] permutedData, int n, int k) {
         int sections = permutedData.length / k;
         int[][] shadowPixels = new int[n][sections];
 
@@ -37,9 +59,7 @@ public class SteganographyEngine {
                 shadowPixels[i][j] = shares[i];
             }
         }
-    }
 
-    public void recover() {
-
+        return shadowPixels;
     }
 }
