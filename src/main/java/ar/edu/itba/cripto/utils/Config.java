@@ -55,9 +55,6 @@ public class Config {
 
         Integer n = null;
         if (parsed.hasOption("n")) {
-            if (isRecover) {
-                throw new IllegalArgumentException("The option -n cannot be used in recovery mode (-r).");
-            }
             try {
                 n = Integer.parseInt(parsed.getOptionValue("n"));
             } catch (NumberFormatException e) {

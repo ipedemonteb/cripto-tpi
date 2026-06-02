@@ -21,17 +21,17 @@ public class ParserCLI {
         options.addOption(
                 "secret",
                 true,
-                "Indicates the image name to be hidden"
+                "(-d) secret image to hide / (-r) output file for the recovered image"
         ).getOption("secret").setArgName("image");
         options.addOption(
                 "k",
                 true,
-                "Sets the minimum shades for secret recovery"
+                "Minimum number of shadows required to recover the secret"
         ).getOption("k").setArgName("number");
         options.addOption(
                 "n",
                 true,
-                "Sets the number of shades to be generated"
+                "Total number of shadows in the scheme"
         ).getOption("n").setArgName("number");
         options.addOption(
                 "dir",

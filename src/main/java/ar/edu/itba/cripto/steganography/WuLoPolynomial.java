@@ -31,10 +31,10 @@ public class WuLoPolynomial {
         long result = 0;
         long power = 1;
         for (int coeff : coefficients) {
-            result += coeff * power;
-            power *= x;
+            result = (result + coeff * power) % PRIME;
+            power = power * x % PRIME;
         }
-        return (int) (result % PRIME);
+        return (int) result;
     }
 
     private void adjustCoefficients() {
@@ -44,5 +44,71 @@ public class WuLoPolynomial {
                 return;
             }
         }
+    }
+
+    /**
+     * Recovers all k polynomial coefficients from k (x, y) pairs using
+     * Gauss-Jordan elimination on the Vandermonde system, mod PRIME (257).
+     *
+     * @param xs  x values (shadow numbers), length k
+     * @param ys  y values (share values), length k
+     * @return    k coefficients [a0, a1, ..., a_{k-1}]
+     */
+    public static int[] recoverCoefficients(int[] xs, int[] ys) {
+        int k = xs.length;
+        long[][] mat = new long[k][k + 1];
+
+        // Build augmented Vandermonde matrix
+        for (int i = 0; i < k; i++) {
+            long power = 1;
+            for (int j = 0; j < k; j++) {
+                mat[i][j] = power;
+                power = power * xs[i] % PRIME;
+            }
+            mat[i][k] = ys[i] % PRIME;
+        }
+
+        // Gauss-Jordan elimination mod PRIME
+        for (int col = 0; col < k; col++) {
+            int pivotRow = -1;
+            for (int row = col; row < k; row++) {
+                if (mat[row][col] != 0) { pivotRow = row; break; }
+            }
+            if (pivotRow == -1) {
+                throw new ArithmeticException("Singular system during recovery at column " + col);
+            }
+            long[] tmp = mat[col]; mat[col] = mat[pivotRow]; mat[pivotRow] = tmp;
+
+            long inv = modPow(mat[col][col], PRIME - 2, PRIME);
+            for (int j = col; j <= k; j++) {
+                mat[col][j] = mat[col][j] * inv % PRIME;
+            }
+
+            for (int row = 0; row < k; row++) {
+                if (row != col && mat[row][col] != 0) {
+                    long factor = mat[row][col];
+                    for (int j = col; j <= k; j++) {
+                        mat[row][j] = ((mat[row][j] - factor * mat[col][j]) % PRIME + PRIME) % PRIME;
+                    }
+                }
+            }
+        }
+
+        int[] result = new int[k];
+        for (int i = 0; i < k; i++) {
+            result[i] = (int) mat[i][k];
+        }
+        return result;
+    }
+
+    private static long modPow(long base, long exp, long mod) {
+        long result = 1;
+        base %= mod;
+        while (exp > 0) {
+            if ((exp & 1) == 1) result = result * base % mod;
+            base = base * base % mod;
+            exp >>= 1;
+        }
+        return result;
     }
 }

@@ -15,19 +15,19 @@ import java.util.List;
 public class Main {
 
     public static void main(String[] args) {
-
         ParserCLI parserCli = new ParserCLI();
 
         try {
             CommandLine parsed = parserCli.parse(args);
             Config config = Config.from(parsed);
 
-            BMPFile secretImage = new BMPFile(config.getSecretImagePath());
-
             if (config.isDistribute()) {
+                BMPFile secretImage = new BMPFile(config.getSecretImagePath());
                 List<BMPFile> shadowImages = loadShadowImages(config, secretImage);
-                SteganographyEngine engine = new SteganographyEngine(config, secretImage, shadowImages);
-                engine.distribute();
+                new SteganographyEngine(config, secretImage, shadowImages).distribute();
+            } else {
+                List<BMPFile> shadowImages = loadShadowImagesForRecovery(config);
+                new SteganographyEngine(config, null, shadowImages).recover();
             }
 
         } catch (IllegalArgumentException e) {
@@ -46,17 +46,14 @@ public class Main {
     }
 
     private static List<BMPFile> loadShadowImages(Config config, BMPFile secretImage) throws IOException {
-
         File dir = config.getDirectory();
         File secretFile = new File(config.getSecretImagePath()).getCanonicalFile();
+        int k = config.getK();
 
-        File[] candidates = dir.listFiles((parent, name) ->
-                name.toLowerCase().endsWith(".bmp"));
-
+        File[] candidates = dir.listFiles((parent, name) -> name.toLowerCase().endsWith(".bmp"));
         if (candidates == null || candidates.length == 0) {
             throw new IllegalArgumentException("No BMP files found in directory: " + dir.getPath());
         }
-
         Arrays.sort(candidates);
 
         List<File> filtered = new ArrayList<>();
@@ -68,21 +65,22 @@ public class Main {
 
         if (filtered.isEmpty()) {
             throw new IllegalArgumentException(
-                    "No carrier BMP files found in directory (only the secret image was present): "
-                            + dir.getPath());
+                    "No carrier BMP files found in directory: " + dir.getPath());
         }
 
         Integer configN = config.getN();
-        int n;
-        if (configN != null) {
-            if (filtered.size() < configN) {
-                throw new IllegalArgumentException(
-                        "Not enough BMP carrier files in directory. Required: " + configN
-                                + ", found: " + filtered.size() + ".");
-            }
-            n = configN;
-        } else {
-            n = filtered.size();
+        int n = (configN != null) ? configN : filtered.size();
+
+        if (filtered.size() < n) {
+            throw new IllegalArgumentException(
+                    "Not enough BMP carrier files. Required: " + n + ", found: " + filtered.size() + ".");
+        }
+
+        // For k!=8: secret width must be divisible by k
+        if (k != 8 && secretImage.getWidth() % k != 0) {
+            throw new IllegalArgumentException(
+                    "For k=" + k + ", secret image width (" + secretImage.getWidth()
+                    + ") must be divisible by k.");
         }
 
         List<BMPFile> shadowImages = new ArrayList<>(n);
@@ -96,15 +94,21 @@ public class Main {
                         "Failed to read carrier image '" + file.getName() + "': " + e.getMessage(), e);
             }
 
-            if (config.getK() == 8) {
+            if (k == 8) {
                 if (shadow.getWidth() != secretImage.getWidth()
                         || shadow.getHeight() != secretImage.getHeight()) {
                     throw new IllegalArgumentException(
-                            "Carrier image '" + file.getName() + "' has dimensions "
-                                    + shadow.getWidth() + "x" + shadow.getHeight()
-                                    + " but the secret image is "
-                                    + secretImage.getWidth() + "x" + secretImage.getHeight()
-                                    + ". For k=8, all carriers must match the secret image size.");
+                            "Carrier '" + file.getName() + "' is " + shadow.getWidth() + "x" + shadow.getHeight()
+                            + " but secret is " + secretImage.getWidth() + "x" + secretImage.getHeight()
+                            + ". For k=8 all carriers must match the secret image size.");
+                }
+            } else {
+                int expectedWidth  = secretImage.getWidth() / k;
+                int expectedHeight = secretImage.getHeight();
+                if (shadow.getWidth() != expectedWidth || shadow.getHeight() != expectedHeight) {
+                    throw new IllegalArgumentException(
+                            "Carrier '" + file.getName() + "' is " + shadow.getWidth() + "x" + shadow.getHeight()
+                            + " but for k=" + k + " carriers must be " + expectedWidth + "x" + expectedHeight + ".");
                 }
             }
 
@@ -112,5 +116,43 @@ public class Main {
         }
 
         return shadowImages;
+    }
+
+    private static List<BMPFile> loadShadowImagesForRecovery(Config config) throws IOException {
+        File dir = config.getDirectory();
+        int k = config.getK();
+        Integer n = config.getN();
+
+        File[] candidates = dir.listFiles((parent, name) -> name.toLowerCase().endsWith(".bmp"));
+        if (candidates == null || candidates.length == 0) {
+            throw new IllegalArgumentException("No BMP files found in directory: " + dir.getPath());
+        }
+        Arrays.sort(candidates);
+
+        // If n is given, restrict the pool to the first n files
+        int poolSize = (n != null) ? Math.min(n, candidates.length) : candidates.length;
+
+        if (poolSize < k) {
+            throw new IllegalArgumentException(
+                    "Not enough BMP files for recovery. Need " + k + ", found: " + poolSize + ".");
+        }
+
+        List<BMPFile> result = new ArrayList<>(k);
+        for (int i = 0; i < k; i++) {
+            result.add(new BMPFile(candidates[i].getPath())); // picks first k from pool
+        }
+
+        if (k == 8) {
+            int refWidth  = result.get(0).getWidth();
+            int refHeight = result.get(0).getHeight();
+            for (int i = 1; i < k; i++) {
+                if (result.get(i).getWidth() != refWidth || result.get(i).getHeight() != refHeight) {
+                    throw new IllegalArgumentException(
+                            "For k=8, all carrier images must have the same dimensions.");
+                }
+            }
+        }
+
+        return result;
     }
 }
