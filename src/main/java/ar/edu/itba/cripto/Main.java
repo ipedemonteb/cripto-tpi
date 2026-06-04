@@ -5,6 +5,7 @@ import ar.edu.itba.cripto.steganography.SteganographyEngine;
 import ar.edu.itba.cripto.utils.Config;
 import ar.edu.itba.cripto.utils.ParserCLI;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.ParseException;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +37,10 @@ public class Main {
             System.exit(1);
         } catch (IOException e) {
             System.err.println("I/O Error: " + e.getMessage());
+            parserCli.printHelp();
+            System.exit(1);
+        } catch (ParseException e) {
+            System.err.println("Argument Error: " + e.getMessage());
             parserCli.printHelp();
             System.exit(1);
         } catch (Exception e) {
