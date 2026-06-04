@@ -39,6 +39,9 @@ public class Config {
             throw new IllegalArgumentException("The option -secret is mandatory.");
         }
         String secretImagePath = parsed.getOptionValue("secret");
+        if (!secretImagePath.toLowerCase().endsWith(".bmp")) {
+            throw new IllegalArgumentException("The secret image must have a .bmp extension.");
+        }
 
         if (!parsed.hasOption("k")) {
             throw new IllegalArgumentException("The option -k is mandatory.");

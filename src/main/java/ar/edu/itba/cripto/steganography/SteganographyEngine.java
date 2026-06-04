@@ -13,6 +13,8 @@ import ar.edu.itba.cripto.utils.Config;
 
 public class SteganographyEngine {
 
+    private static final int SEED_RANGE = 65536;
+
     private final Config config;
     private final BMPFile secretImage; // null during recovery
     private final List<BMPFile> shadowImages;
@@ -27,7 +29,7 @@ public class SteganographyEngine {
         int k = config.getK();
         int n = shadowImages.size();
 
-        int seed = new Random().nextInt(65536);
+        int seed = new Random().nextInt(SEED_RANGE);
 
         int[] pixels = secretImage.getDataAsIntArray();
         PermutationTable pt = new PermutationTable(seed, pixels.length);

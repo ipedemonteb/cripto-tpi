@@ -11,6 +11,18 @@ public class BMPFile {
     static final int HEADER_SIZE = 54;
     private static final int BITS_PER_PIXEL = 8;
 
+    private static final int OFFSET_FILE_SIZE = 2;
+    private static final int OFFSET_SEED_LOW = 6;
+    private static final int OFFSET_SEED_HIGH = 7;
+    private static final int OFFSET_SHADOW_LOW = 8;
+    private static final int OFFSET_SHADOW_HIGH = 9;
+    private static final int OFFSET_PIXEL_DATA = 10;
+    private static final int OFFSET_WIDTH = 18;
+    private static final int OFFSET_HEIGHT = 22;
+    private static final int OFFSET_BITS_PER_PIXEL = 28;
+    private static final int OFFSET_COMPRESSION = 30;
+    private static final int OFFSET_IMAGE_SIZE = 34;
+
     private byte[] header;
     private byte[] palette;
     private byte[] data;
@@ -36,18 +48,18 @@ public class BMPFile {
             throw new IOException("Invalid BMP file format.");
         }
 
-        bitsPerPixel = ((file[29] & 0xFF) << 8) | (file[28] & 0xFF);
+        bitsPerPixel = ((file[OFFSET_BITS_PER_PIXEL + 1] & 0xFF) << 8) | (file[OFFSET_BITS_PER_PIXEL] & 0xFF);
         if (bitsPerPixel != BITS_PER_PIXEL) {
             throw new IOException("Only 8 bits per pixel are supported.");
         }
 
-        width = ((file[21] & 0xFF) << 24) | ((file[20] & 0xFF) << 16) |
-                ((file[19] & 0xFF) << 8) | (file[18] & 0xFF);
-        height = ((file[25] & 0xFF) << 24) | ((file[24] & 0xFF) << 16) |
-                ((file[23] & 0xFF) << 8) | (file[22] & 0xFF);
+        width = ((file[OFFSET_WIDTH + 3] & 0xFF) << 24) | ((file[OFFSET_WIDTH + 2] & 0xFF) << 16) |
+                ((file[OFFSET_WIDTH + 1] & 0xFF) << 8) | (file[OFFSET_WIDTH] & 0xFF);
+        height = ((file[OFFSET_HEIGHT + 3] & 0xFF) << 24) | ((file[OFFSET_HEIGHT + 2] & 0xFF) << 16) |
+                ((file[OFFSET_HEIGHT + 1] & 0xFF) << 8) | (file[OFFSET_HEIGHT] & 0xFF);
 
-        int isCompressed = ((file[33] & 0xFF) << 24) | ((file[32] & 0xFF) << 16) |
-                ((file[31] & 0xFF) << 8) | (file[30] & 0xFF);
+        int isCompressed = ((file[OFFSET_COMPRESSION + 3] & 0xFF) << 24) | ((file[OFFSET_COMPRESSION + 2] & 0xFF) << 16) |
+                ((file[OFFSET_COMPRESSION + 1] & 0xFF) << 8) | (file[OFFSET_COMPRESSION] & 0xFF);
         if (isCompressed != 0) {
             throw new IOException("Compressed BMP files are not supported");
         }
@@ -55,8 +67,8 @@ public class BMPFile {
         header = new byte[HEADER_SIZE];
         System.arraycopy(file, 0, header, 0, HEADER_SIZE);
 
-        int offset = ((file[13] & 0xFF) << 24) | ((file[12] & 0xFF) << 16) |
-                ((file[11] & 0xFF) << 8) | (file[10] & 0xFF);
+        int offset = ((file[OFFSET_PIXEL_DATA + 3] & 0xFF) << 24) | ((file[OFFSET_PIXEL_DATA + 2] & 0xFF) << 16) |
+                ((file[OFFSET_PIXEL_DATA + 1] & 0xFF) << 8) | (file[OFFSET_PIXEL_DATA] & 0xFF);
 
         int paletteSize = offset - HEADER_SIZE;
         palette = new byte[paletteSize];
@@ -83,31 +95,31 @@ public class BMPFile {
         out.data = pixelData;
 
         // Width
-        out.header[18] = (byte)(outWidth & 0xFF);
-        out.header[19] = (byte)((outWidth >> 8) & 0xFF);
-        out.header[20] = (byte)((outWidth >> 16) & 0xFF);
-        out.header[21] = (byte)((outWidth >> 24) & 0xFF);
+        out.header[OFFSET_WIDTH] = (byte)(outWidth & 0xFF);
+        out.header[OFFSET_WIDTH + 1] = (byte)((outWidth >> 8) & 0xFF);
+        out.header[OFFSET_WIDTH + 2] = (byte)((outWidth >> 16) & 0xFF);
+        out.header[OFFSET_WIDTH + 3] = (byte)((outWidth >> 24) & 0xFF);
         // Height
-        out.header[22] = (byte)(outHeight & 0xFF);
-        out.header[23] = (byte)((outHeight >> 8) & 0xFF);
-        out.header[24] = (byte)((outHeight >> 16) & 0xFF);
-        out.header[25] = (byte)((outHeight >> 24) & 0xFF);
+        out.header[OFFSET_HEIGHT] = (byte)(outHeight & 0xFF);
+        out.header[OFFSET_HEIGHT + 1] = (byte)((outHeight >> 8) & 0xFF);
+        out.header[OFFSET_HEIGHT + 2] = (byte)((outHeight >> 16) & 0xFF);
+        out.header[OFFSET_HEIGHT + 3] = (byte)((outHeight >> 24) & 0xFF);
         // File size
         int rowSize = ((outWidth + 3) / 4) * 4;
         int outPixelDataSize = rowSize * outHeight;
         int fileSize = HEADER_SIZE + out.palette.length + outPixelDataSize;
-        out.header[2] = (byte)(fileSize & 0xFF);
-        out.header[3] = (byte)((fileSize >> 8) & 0xFF);
-        out.header[4] = (byte)((fileSize >> 16) & 0xFF);
-        out.header[5] = (byte)((fileSize >> 24) & 0xFF);
+        out.header[OFFSET_FILE_SIZE] = (byte)(fileSize & 0xFF);
+        out.header[OFFSET_FILE_SIZE + 1] = (byte)((fileSize >> 8) & 0xFF);
+        out.header[OFFSET_FILE_SIZE + 2] = (byte)((fileSize >> 16) & 0xFF);
+        out.header[OFFSET_FILE_SIZE + 3] = (byte)((fileSize >> 24) & 0xFF);
         // Image data size
-        out.header[34] = (byte)(outPixelDataSize & 0xFF);
-        out.header[35] = (byte)((outPixelDataSize >> 8) & 0xFF);
-        out.header[36] = (byte)((outPixelDataSize >> 16) & 0xFF);
-        out.header[37] = (byte)((outPixelDataSize >> 24) & 0xFF);
+        out.header[OFFSET_IMAGE_SIZE] = (byte)(outPixelDataSize & 0xFF);
+        out.header[OFFSET_IMAGE_SIZE + 1] = (byte)((outPixelDataSize >> 8) & 0xFF);
+        out.header[OFFSET_IMAGE_SIZE + 2] = (byte)((outPixelDataSize >> 16) & 0xFF);
+        out.header[OFFSET_IMAGE_SIZE + 3] = (byte)((outPixelDataSize >> 24) & 0xFF);
         // Clear reserved bytes (seed and shadow number)
-        out.header[6] = 0; out.header[7] = 0;
-        out.header[8] = 0; out.header[9] = 0;
+        out.header[OFFSET_SEED_LOW] = 0; out.header[OFFSET_SEED_HIGH] = 0;
+        out.header[OFFSET_SHADOW_LOW] = 0; out.header[OFFSET_SHADOW_HIGH] = 0;
 
         return out;
     }
@@ -133,21 +145,21 @@ public class BMPFile {
     }
 
     public int getSeed() {
-        return ((header[7] & 0xFF) << 8) | (header[6] & 0xFF);
+        return ((header[OFFSET_SEED_HIGH] & 0xFF) << 8) | (header[OFFSET_SEED_LOW] & 0xFF);
     }
 
     public void setSeed(int seed) {
-        header[6] = (byte)(seed & 0xFF);
-        header[7] = (byte)((seed >> 8) & 0xFF);
+        header[OFFSET_SEED_LOW] = (byte)(seed & 0xFF);
+        header[OFFSET_SEED_HIGH] = (byte)((seed >> 8) & 0xFF);
     }
 
     public int getShadowNumber() {
-        return ((header[9] & 0xFF) << 8) | (header[8] & 0xFF);
+        return ((header[OFFSET_SHADOW_HIGH] & 0xFF) << 8) | (header[OFFSET_SHADOW_LOW] & 0xFF);
     }
 
     public void setShadowNumber(int shadowNumber) {
-        header[8] = (byte)(shadowNumber & 0xFF);
-        header[9] = (byte)((shadowNumber >> 8) & 0xFF);
+        header[OFFSET_SHADOW_LOW] = (byte)(shadowNumber & 0xFF);
+        header[OFFSET_SHADOW_HIGH] = (byte)((shadowNumber >> 8) & 0xFF);
     }
 
     public void save(Path outputPath) throws IOException {
