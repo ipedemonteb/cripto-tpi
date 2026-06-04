@@ -3,6 +3,7 @@ package ar.edu.itba.cripto.steganography;
 public class WuLoPolynomial {
 
     private static final int PRIME = 257;
+    private static final int MAX_ITERATIONS = 5000;
 
     private final int[] coefficients;
 
@@ -13,13 +14,16 @@ public class WuLoPolynomial {
     public int[] computeShares(int n) {
         int[] shares = new int[n];
         boolean overflow;
+        int iterations = 0;
         do {
             overflow = false;
             for (int i = 1; i <= n; i++) {
                 shares[i - 1] = evaluate(i);
                 if (shares[i - 1] == PRIME - 1) {
                     overflow = true;
-                    adjustCoefficients();
+                    if (!adjustCoefficients() || ++iterations > MAX_ITERATIONS) {
+                        throw new IllegalStateException("Could not resolve coefficient overflow (256) without infinite loop.");
+                    }
                     break;
                 }
             }
@@ -37,13 +41,14 @@ public class WuLoPolynomial {
         return (int) result;
     }
 
-    private void adjustCoefficients() {
+    private boolean adjustCoefficients() {
         for (int i = 0; i < coefficients.length; i++) {
             if (coefficients[i] != 0) {
                 coefficients[i]--;
-                return;
+                return true;
             }
         }
+        return false;
     }
 
     /**

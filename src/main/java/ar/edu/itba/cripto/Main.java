@@ -73,20 +73,18 @@ public class Main {
                     "Not enough BMP carrier files. Required: " + n + ", found: " + filtered.size() + ".");
         }
 
+        long totalPixels = (long) secretImage.getWidth() * secretImage.getHeight();
+        if (totalPixels % k != 0) {
+            throw new IllegalArgumentException(
+                    "The total number of pixels (width * height = "
+                    + secretImage.getWidth() + " * " + secretImage.getHeight()
+                    + " = " + totalPixels + ") must be divisible by k=" + k + ".");
+        }
+
         if (k != 8 && secretImage.getWidth() % k != 0) {
             throw new IllegalArgumentException(
                     "For k=" + k + ", secret image width (" + secretImage.getWidth()
                     + ") must be divisible by k.");
-        }
-
-        if (k == 8) {
-            long totalPixels = (long) secretImage.getWidth() * secretImage.getHeight();
-            if (totalPixels % 8 != 0) {
-                throw new IllegalArgumentException(
-                        "For k=8, the total number of pixels (width × height = "
-                        + secretImage.getWidth() + " × " + secretImage.getHeight()
-                        + " = " + totalPixels + ") must be divisible by 8.");
-            }
         }
 
         List<BMPFile> shadowImages = new ArrayList<>(n);

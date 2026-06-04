@@ -62,9 +62,11 @@ public class BMPFile {
         palette = new byte[paletteSize];
         System.arraycopy(file, HEADER_SIZE, palette, 0, paletteSize);
 
-        int size = file.length - offset;
-        data = new byte[size];
-        System.arraycopy(file, offset, data, 0, size);
+        int rowSize = ((width + 3) / 4) * 4;
+        data = new byte[width * height];
+        for (int r = 0; r < height; r++) {
+            System.arraycopy(file, offset + r * rowSize, data, r * width, width);
+        }
     }
 
     /**
@@ -91,16 +93,18 @@ public class BMPFile {
         out.header[24] = (byte)((outHeight >> 16) & 0xFF);
         out.header[25] = (byte)((outHeight >> 24) & 0xFF);
         // File size
-        int fileSize = HEADER_SIZE + out.palette.length + pixelData.length;
+        int rowSize = ((outWidth + 3) / 4) * 4;
+        int outPixelDataSize = rowSize * outHeight;
+        int fileSize = HEADER_SIZE + out.palette.length + outPixelDataSize;
         out.header[2] = (byte)(fileSize & 0xFF);
         out.header[3] = (byte)((fileSize >> 8) & 0xFF);
         out.header[4] = (byte)((fileSize >> 16) & 0xFF);
         out.header[5] = (byte)((fileSize >> 24) & 0xFF);
         // Image data size
-        out.header[34] = (byte)(pixelData.length & 0xFF);
-        out.header[35] = (byte)((pixelData.length >> 8) & 0xFF);
-        out.header[36] = (byte)((pixelData.length >> 16) & 0xFF);
-        out.header[37] = (byte)((pixelData.length >> 24) & 0xFF);
+        out.header[34] = (byte)(outPixelDataSize & 0xFF);
+        out.header[35] = (byte)((outPixelDataSize >> 8) & 0xFF);
+        out.header[36] = (byte)((outPixelDataSize >> 16) & 0xFF);
+        out.header[37] = (byte)((outPixelDataSize >> 24) & 0xFF);
         // Clear reserved bytes (seed and shadow number)
         out.header[6] = 0; out.header[7] = 0;
         out.header[8] = 0; out.header[9] = 0;
@@ -147,10 +151,15 @@ public class BMPFile {
     }
 
     public void save(Path outputPath) throws IOException {
-        byte[] output = new byte[HEADER_SIZE + palette.length + data.length];
+        int rowSize = ((width + 3) / 4) * 4;
+        int pixelDataSize = rowSize * height;
+        byte[] output = new byte[HEADER_SIZE + palette.length + pixelDataSize];
         System.arraycopy(header, 0, output, 0, HEADER_SIZE);
         System.arraycopy(palette, 0, output, HEADER_SIZE, palette.length);
-        System.arraycopy(data, 0, output, HEADER_SIZE + palette.length, data.length);
+        int offset = HEADER_SIZE + palette.length;
+        for (int r = 0; r < height; r++) {
+            System.arraycopy(data, r * width, output, offset + r * rowSize, width);
+        }
         Files.write(outputPath, output);
     }
 
