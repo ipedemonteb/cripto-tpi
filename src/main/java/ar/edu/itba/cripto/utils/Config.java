@@ -55,6 +55,10 @@ public class Config {
 
         Integer n = null;
         if (parsed.hasOption("n")) {
+            if (isRecover) {
+                throw new IllegalArgumentException(
+                        "The option -n can only be used with -d (distribute). It is not valid in recover mode.");
+            }
             try {
                 n = Integer.parseInt(parsed.getOptionValue("n"));
             } catch (NumberFormatException e) {
@@ -68,6 +72,19 @@ public class Config {
             }
         }
 
+
+        if (isDistribute) {
+            File secretFile = new File(secretImagePath);
+            if (!secretFile.exists()) {
+                throw new IllegalArgumentException(
+                        "Secret image file not found: '" + secretImagePath + "'. " +
+                        "When using -d the file must exist before distribution.");
+            }
+            if (!secretFile.isFile()) {
+                throw new IllegalArgumentException(
+                        "'" + secretImagePath + "' is not a regular file.");
+            }
+        }
 
         String directoryPath = parsed.hasOption("dir") ? parsed.getOptionValue("dir") : ".";
         File directory = new File(directoryPath);

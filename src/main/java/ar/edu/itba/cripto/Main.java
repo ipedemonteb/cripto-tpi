@@ -71,12 +71,16 @@ public class Main {
         Integer configN = config.getN();
         int n = (configN != null) ? configN : filtered.size();
 
+        if (n < k) {
+            throw new IllegalArgumentException(
+                    "Not enough BMP carrier files. Need at least k=" + k + " carriers, found: " + n + ".");
+        }
+
         if (filtered.size() < n) {
             throw new IllegalArgumentException(
                     "Not enough BMP carrier files. Required: " + n + ", found: " + filtered.size() + ".");
         }
 
-        // For k!=8: secret width must be divisible by k
         if (k != 8 && secretImage.getWidth() % k != 0) {
             throw new IllegalArgumentException(
                     "For k=" + k + ", secret image width (" + secretImage.getWidth()
@@ -129,7 +133,6 @@ public class Main {
         }
         Arrays.sort(candidates);
 
-        // If n is given, restrict the pool to the first n files
         int poolSize = (n != null) ? Math.min(n, candidates.length) : candidates.length;
 
         if (poolSize < k) {
@@ -139,16 +142,32 @@ public class Main {
 
         List<BMPFile> result = new ArrayList<>(k);
         for (int i = 0; i < k; i++) {
-            result.add(new BMPFile(candidates[i].getPath())); // picks first k from pool
+            result.add(new BMPFile(candidates[i].getPath()));
         }
 
         if (k == 8) {
-            int refWidth  = result.get(0).getWidth();
-            int refHeight = result.get(0).getHeight();
+            int refWidth  = result.getFirst().getWidth();
+            int refHeight = result.getFirst().getHeight();
             for (int i = 1; i < k; i++) {
                 if (result.get(i).getWidth() != refWidth || result.get(i).getHeight() != refHeight) {
                     throw new IllegalArgumentException(
                             "For k=8, all carrier images must have the same dimensions.");
+                }
+            }
+        } else {
+            int refDataLen = result.getFirst().getData().length;
+            int refWidth   = result.getFirst().getWidth();
+            int refHeight  = result.getFirst().getHeight();
+            for (int i = 1; i < k; i++) {
+                BMPFile carrier = result.get(i);
+                if (carrier.getData().length != refDataLen
+                        || carrier.getWidth() != refWidth
+                        || carrier.getHeight() != refHeight) {
+                    throw new IllegalArgumentException(
+                            "For k=" + k + ", all carrier images must have the same dimensions (" +
+                            refWidth + "x" + refHeight + "). " +
+                            "Carrier '" + candidates[i].getName() + "' is " +
+                            carrier.getWidth() + "x" + carrier.getHeight() + ".");
                 }
             }
         }
