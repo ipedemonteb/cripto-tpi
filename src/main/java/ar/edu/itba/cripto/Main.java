@@ -5,7 +5,6 @@ import ar.edu.itba.cripto.steganography.SteganographyEngine;
 import ar.edu.itba.cripto.utils.Config;
 import ar.edu.itba.cripto.utils.ParserCLI;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.ParseException;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,20 +30,8 @@ public class Main {
                 new SteganographyEngine(config, null, shadowImages).recover();
             }
 
-        } catch (IllegalArgumentException e) {
-            System.err.println("Configuration Error: " + e.getMessage());
-            parserCli.printHelp();
-            System.exit(1);
-        } catch (IOException e) {
-            System.err.println("I/O Error: " + e.getMessage());
-            parserCli.printHelp();
-            System.exit(1);
-        } catch (ParseException e) {
-            System.err.println("Argument Error: " + e.getMessage());
-            parserCli.printHelp();
-            System.exit(1);
         } catch (Exception e) {
-            System.err.println("An unexpected error occurred: " + e.getMessage());
+            System.err.println("Error [" + e.getClass().getSimpleName() + "]: " + e.getMessage());
             parserCli.printHelp();
             System.exit(1);
         }
@@ -90,6 +77,16 @@ public class Main {
             throw new IllegalArgumentException(
                     "For k=" + k + ", secret image width (" + secretImage.getWidth()
                     + ") must be divisible by k.");
+        }
+
+        if (k == 8) {
+            long totalPixels = (long) secretImage.getWidth() * secretImage.getHeight();
+            if (totalPixels % 8 != 0) {
+                throw new IllegalArgumentException(
+                        "For k=8, the total number of pixels (width × height = "
+                        + secretImage.getWidth() + " × " + secretImage.getHeight()
+                        + " = " + totalPixels + ") must be divisible by 8.");
+            }
         }
 
         List<BMPFile> shadowImages = new ArrayList<>(n);
