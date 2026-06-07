@@ -57,11 +57,7 @@ public class Config {
         }
 
         Integer n = null;
-        if (parsed.hasOption("n")) {
-            if (isRecover) {
-                throw new IllegalArgumentException(
-                        "The option -n can only be used with -d (distribute). It is not valid in recover mode.");
-            }
+        if (parsed.hasOption("n") && isDistribute) {
             try {
                 n = Integer.parseInt(parsed.getOptionValue("n"));
             } catch (NumberFormatException e) {
