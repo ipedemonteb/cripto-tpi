@@ -7,13 +7,15 @@ public class LSB {
     private LSB() { }
 
     /**
-     * Hides shadowPixels in carrier using LSB-1 (1 bit per carrier byte, 8 carrier bytes per shadow byte).
+     * Hides shadowPixels in carrier using LSB-n (bits per carrier byte, 8/bits carrier bytes per shadow byte).
      * Stores seed in header bytes 6-7 and shadowNumber in bytes 8-9.
      */
-    public static void hide(BMPFile carrier, int[] shadowPixels, int shadowNumber, int seed) {
+    public static void hide(BMPFile carrier, int[] shadowPixels, int shadowNumber, int seed, int bits) {
         byte[] carrierData = carrier.getData();
+        int carrierBytesPerShadow = 8 / bits;
+        int mask = ~((1 << bits) - 1) & 0xFF;
 
-        int requiredBytes = shadowPixels.length * 8;
+        int requiredBytes = shadowPixels.length * carrierBytesPerShadow;
         if (requiredBytes > carrierData.length) {
             throw new IllegalArgumentException(
                     "Carrier image is too small to embed the shadow. " +
@@ -26,20 +28,21 @@ public class LSB {
 
         int carrierIndex = 0;
         for (int shadowPixel : shadowPixels) {
-            for (int bit = 7; bit >= 0; bit--) {
-                int bitValue = (shadowPixel >> bit) & 1;
-                carrierData[carrierIndex] = (byte)((carrierData[carrierIndex] & 0xFE) | bitValue);
+            for (int shift = 8 - bits; shift >= 0; shift -= bits) {
+                int bitsValue = (shadowPixel >> shift) & ((1 << bits) - 1);
+                carrierData[carrierIndex] = (byte)((carrierData[carrierIndex] & mask) | bitsValue);
                 carrierIndex++;
             }
         }
     }
 
     /**
-     * Extracts numValues shadow bytes from carrier using LSB-1 (1 bit per carrier byte).
+     * Extracts numValues shadow bytes from carrier using LSB-n (bits per carrier byte).
      */
-    public static int[] extract(BMPFile carrier, int numValues) {
+    public static int[] extract(BMPFile carrier, int numValues, int bits) {
         byte[] carrierData = carrier.getData();
-        if (numValues * 8 > carrierData.length) {
+        int carrierBytesPerShadow = 8 / bits;
+        if (numValues * carrierBytesPerShadow > carrierData.length) {
             throw new IllegalArgumentException(
                     "Not enough carrier bytes to extract " + numValues + " shadow values.");
         }
@@ -48,9 +51,9 @@ public class LSB {
         int carrierIndex = 0;
         for (int i = 0; i < numValues; i++) {
             int value = 0;
-            for (int bit = 7; bit >= 0; bit--) {
-                int lsb = carrierData[carrierIndex] & 1;
-                value |= (lsb << bit);
+            for (int shift = 8 - bits; shift >= 0; shift -= bits) {
+                int bitsValue = carrierData[carrierIndex] & ((1 << bits) - 1);
+                value |= (bitsValue << shift);
                 carrierIndex++;
             }
             result[i] = value;

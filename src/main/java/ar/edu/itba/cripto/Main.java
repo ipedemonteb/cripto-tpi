@@ -123,7 +123,7 @@ public class Main {
                             + ". For k=8 all carriers must match the secret image size.");
                 }
             } else {
-                int expectedWidth  = secretImage.getWidth() / k;
+                int expectedWidth  = secretImage.getWidth() / k * (8 / SteganographyEngine.LSB_BITS_NON_K8);
                 int expectedHeight = secretImage.getHeight();
                 if (shadow.getWidth() != expectedWidth || shadow.getHeight() != expectedHeight) {
                     throw new IllegalArgumentException(

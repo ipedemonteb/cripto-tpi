@@ -14,6 +14,7 @@ import ar.edu.itba.cripto.utils.Config;
 public class SteganographyEngine {
 
     private static final int SEED_RANGE = 65536;
+    public static final int LSB_BITS_NON_K8 = 4;
 
     private final Config config;
     private final BMPFile secretImage; // null during recovery
@@ -42,21 +43,9 @@ public class SteganographyEngine {
             BMPFile carrier = shadowImages.get(i);
             int shadowNumber = i + 1;
 
-            if (k == 8) {
-                LSB.hide(carrier, shadowPixels[i], shadowNumber, seed);
-                carrier.save(carrier.getPath());
-            } else {
-                byte[] shadowData = new byte[sections];
-                for (int j = 0; j < sections; j++) {
-                    shadowData[j] = (byte) shadowPixels[i][j];
-                }
-                int shadowWidth  = secretImage.getWidth() / k;
-                int shadowHeight = secretImage.getHeight();
-                BMPFile shadowBMP = BMPFile.createOutput(carrier, shadowWidth, shadowHeight, shadowData);
-                shadowBMP.setSeed(seed);
-                shadowBMP.setShadowNumber(shadowNumber);
-                shadowBMP.save(carrier.getPath());
-            }
+            int bits = (k == 8) ? 1 : LSB_BITS_NON_K8;
+            LSB.hide(carrier, shadowPixels[i], shadowNumber, seed, bits);
+            carrier.save(carrier.getPath());
         }
 
         System.out.println("Distributed secret into " + n + " shadow images (k=" + k + ").");
@@ -100,16 +89,14 @@ public class SteganographyEngine {
         int[][] shadowValues = new int[k][];
 
         if (k == 8) {
-            // Shadow values are embedded 1 bit per carrier pixel
             sections = carriers.get(0).getData().length / 8;
             for (int i = 0; i < k; i++) {
-                shadowValues[i] = LSB.extract(carriers.get(i), sections);
+                shadowValues[i] = LSB.extract(carriers.get(i), sections, 1);
             }
         } else {
-            // Shadow values ARE the carrier pixels
-            sections = carriers.get(0).getData().length;
+            sections = carriers.get(0).getData().length * LSB_BITS_NON_K8 / 8;
             for (int i = 0; i < k; i++) {
-                shadowValues[i] = carriers.get(i).getDataAsIntArray();
+                shadowValues[i] = LSB.extract(carriers.get(i), sections, LSB_BITS_NON_K8);
             }
         }
 
@@ -137,8 +124,8 @@ public class SteganographyEngine {
 
         // Determine output dimensions
         BMPFile carrier0 = carriers.get(0);
-        int outWidth  = (k == 8) ? carrier0.getWidth() : carrier0.getWidth() * k;
         int outHeight = carrier0.getHeight();
+        int outWidth  = (k == 8) ? carrier0.getWidth() : totalPixels / outHeight;
 
         BMPFile output = BMPFile.createOutput(carrier0, outWidth, outHeight, pixelData);
         output.save(Paths.get(config.getSecretImagePath()));
