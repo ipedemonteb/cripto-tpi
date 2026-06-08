@@ -9,6 +9,7 @@ public class Config {
     private static final int MIN_K = 2;
     private static final int MAX_K = 10;
     private static final int MIN_N = 2;
+    private static final int MAX_N = 256;
 
     private final boolean distribute;
     private final String secretImagePath;
@@ -68,6 +69,9 @@ public class Config {
             }
             if (n < k) {
                 throw new IllegalArgumentException("The value of n cannot be less than k.");
+            }
+            if (n > MAX_N) {
+                throw new IllegalArgumentException("The value of n cannot be greater than " + MAX_N + ".");
             }
         }
 
